@@ -13,31 +13,6 @@ const warning = chalk.keyword('orange');
 const integerReg = /^([1-9]\d*|0)(\.\d*[1-9])?$/; // 正整数
 const colorRegx = /^(#(?:[0-9a-fA-F]{3}){1,2}|black|green|silver|gray|olive|white|yellow|maroon|navy|red|blue|purple|teal|fuchsia|aqua)$/; // 颜色名或hex类型色值
 
-// metods
-const getExt = program => {
-	let _ext = '';
-
-	switch (true) {
-		case program.gif:
-			_ext = 'gif';
-			break;
-		case program.png:
-			_ext = 'png';
-			break;
-		case program.jpeg:
-			_ext = 'jpeg';
-			break;
-		case program.jpg:
-			_ext = 'jpg';
-			break;
-		default:
-			_ext = 'jpg';
-			break;
-	}
-
-	return _ext;
-};
-
 // 命令行对象设置
 program
 	.version('0.0.1')
@@ -56,10 +31,28 @@ program
 
 program.parse(process.argv);
 
+// option 选项
+const { gif, png, jpeg, jpg, text, bgcolor, color } = program;
+
+// 获取后缀
+const getExt = () => {
+	switch (true) {
+		case gif:
+			return 'gif';
+		case png:
+			return 'png';
+		case jpeg:
+			return 'jpeg';
+		case jpg:
+		default:
+			return 'jpg';
+	}
+};
+
 // 图片下载路由相关
 let prefix = 'https://via.placeholder.com/', // 前缀
 	name = `${_width}`, // 图片名
-	ext = getExt(program), // 图片类型
+	ext = getExt(), // 图片类型
 	len = _otherArgs.length; // 其他参数长度
 downloadUrl = `${prefix}${name}.${ext}`; // 下载url
 
@@ -69,12 +62,16 @@ if (typeof _width === 'undefined' || !_width) {
 	process.exit(1);
 }
 
+if (!integerReg.test(_width)) {
+	console.log(error('**请填写正确的图片宽度**'));
+	process.exit(1);
+}
+
 // 接收参数
 const copyArgs = [..._otherArgs],
 	arg0 = copyArgs[0],
 	arg1 = copyArgs[1],
-	arg2 = copyArgs[2],
-	arg3 = copyArgs[3];
+	arg2 = copyArgs[2];
 
 // 背景色，文字颜色，文本组合情况
 const b = program.bgcolor ? 1 : 0,
@@ -83,292 +80,339 @@ const b = program.bgcolor ? 1 : 0,
 
 const option = `${b}${c}${t}`;
 
-const opt1Arg = () => {
-	if (integerReg.test(arg0)) {
-		name = `${width}x${arg0}`;
-		downloadUrl = `${prefix}${name}.${ext}`; // 下载url
-		option !== '000' && console.log(warning('仅填写图片长度，请注意其它参数'));
-	} else {
-		switch (option) {
-			case '000':
-				console.log(warning('第二个参数无效'));
-				break;
-			case '001':
-				downloadUrl = `${downloadUrl}?text=${arg0}`;
-				break;
-			case '100':
-			case '010':
-			case '110':
-				if (!colorRegx.test(arg0)) {
-					console.log(error('第二个参数非有效颜色'));
-					process.exit(1);
-				}
-
-				downloadUrl = option === '010' ? `${downloadUrl}//${arg0}` : `${downloadUrl}/${arg0}`;
-				break;
-			case '101':
-			case '011':
-			case '111':
-				if (!colorRegx.test(arg0)) {
-					downloadUrl = `${downloadUrl}?text=${arg0}`;
-				} else {
-					downloadUrl = option === '011' ? `${downloadUrl}//${arg0}` : `${downloadUrl}/${arg0}`;
-				}
-
-				break;
-		}
+const getArgType = (arg = '') => {
+	switch (true) {
+		case integerReg.test(arg):
+			return 'num';
+		case colorRegx.test(arg):
+			return 'color';
+		default:
+			return 'text';
 	}
 };
 
-const opt2Arg = () => {
-	if (integerReg.test(arg0)) {
-		name = `${width}x${arg0}`;
+const genText = textArr => textArr.reduce((acc, cur) => `${acc}+${cur}`);
 
-		switch (option) {
-			case '110':
-				if (colorRegx.test(arg1)) {
-					downloadUrl = `${downloadUrl}/${arg1}`;
-				} else {
-					console.log(error('第二个参数有误，请检查'));
-				}
-				break;
-			case '011':
-				if (colorRegx.test(arg1)) {
-					downloadUrl = `${downloadUrl}//${arg1}`;
-				} else {
-					downloadUrl = `${downloadUrl}?text=${arg1}`;
-				}
-				break;
-			case '101':
-			case '111':
-				if (colorRegx.test(arg1)) {
-					downloadUrl = `${downloadUrl}/${arg1}`;
-				} else {
-					downloadUrl = `${downloadUrl}?text=${arg1}`;
-				}
-				break;
-		}
-	} else {
-		switch (option) {
-			case '110':
-				if (colorRegx.test(arg0) && colorRegx.test(arg1)) {
-					downloadUrl = `${downloadUrl}/${arg0}/${arg1}`;
-				} else {
-					if (colorRegx.test(arg0)) {
-						downloadUrl = `${downloadUrl}/${arg0}`;
-					}
+const actions = () => {
+	return new Map([
+		[
+			/^000_num_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+			}
+		],
+		[
+			/^000_(color|text)_?.*$/,
+			() => {
+				console.log(warning('存在冗余参数'));
+			}
+		],
+		[
+			/^001_num_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
 
-					if (colorRegx.test(arg1)) {
-						downloadUrl = `${downloadUrl}/${arg1}`;
-					}
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}?text=${text}`;
 				}
-				break;
-			case '011':
-				if (colorRegx.test(arg0)) {
-					downloadUrl = `${downloadUrl}//${arg0}?text=${arg1}`;
+			}
+		],
+		[
+			/^001_(color|text)_?.*$/,
+			() => {
+				if (len > 1) {
+					const text = genText(copyArgs);
+					downloadUrl = `${prefix}${name}.${ext}?text=${text}`;
 				} else {
-					downloadUrl = `${downloadUrl}?text=${arg0}+${arg1}`;
+					console.log(warning('未输入文本参数'));
 				}
-				break;
-			case '101':
-				if (colorRegx.test(arg0)) {
-					downloadUrl = `${downloadUrl}/${arg0}?text=${arg1}`;
+			}
+		],
+		[
+			/^010_num_color_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+				downloadUrl = `${prefix}${name}.${ext}//${arg1}`;
+			}
+		],
+		[
+			/^(01|10)0_num_(num|text)_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+			}
+		],
+		[
+			/^010_color_?.*$/,
+			() => {
+				downloadUrl = `${prefix}${name}.${ext}//${arg0}`;
+			}
+		],
+		[
+			/^(01|10)0_text_?.*$/,
+			() => {
+				console.log(warning('未输入颜色参数！'));
+			}
+		],
+		[
+			/^100_num_color_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+				downloadUrl = `${prefix}${name}.${ext}/${arg1}`;
+			}
+		],
+		[
+			/^100_color_?.*$/,
+			() => {
+				downloadUrl = `${prefix}${name}.${ext}/${arg0}`;
+			}
+		],
+		[
+			/^110_color_color_?.*$/,
+			() => {
+				downloadUrl = `${prefix}${name}.${ext}/${arg0}/${arg1}`;
+			}
+		],
+		[
+			/^110_color_(num|text)_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数，将下载仅配置背景图片！'));
+				downloadUrl = `${prefix}${name}.${ext}/${arg0}`;
+			}
+		],
+		[
+			/^110_num_(num|text)_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数，将下载普通图片！'));
+				name = `${width}x${arg0}`;
+			}
+		],
+		[
+			/^110_num_color_color_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+				downloadUrl = `${prefix}${name}.${ext}/${arg0}/${arg1}`;
+			}
+		],
+		[
+			/^110_num_color_(num|text)_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数，将下载仅配置背景图片！'));
+				name = `${width}x${arg0}`;
+				downloadUrl = `${prefix}${name}.${ext}/${arg1}`;
+			}
+		],
+		[
+			/^110_text_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数，将下载普通图片！'));
+			}
+		],
+		[
+			/^101_num_color_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+				if (len > 2) {
+					const restArgs = copyArgs.slice(2);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}/${arg1}?text=${text}`;
 				} else {
-					downloadUrl = `${downloadUrl}?text=${arg0}+${arg1}`;
+					downloadUrl = `${prefix}${name}.${ext}/${arg1}`;
 				}
-				break;
-			case '111':
-				if (colorRegx.test(arg0)) {
-					if (colorRegx.test(arg1)) {
-						downloadUrl = `${downloadUrl}/${arg0}/${arg1}`;
-					} else {
-						downloadUrl = `${downloadUrl}/${arg0}?text=${arg1}`;
-					}
+			}
+		],
+		[
+			/^101_num_(text|num)_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数'));
+				name = `${width}x${arg0}`;
+
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^101_color_?.*$/,
+			() => {
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}/${arg0}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^101_text_?.*$/,
+			() => {
+				if (len > 0) {
+					const text = genText(copyArgs);
+					downloadUrl = `${prefix}${name}.${ext}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^011_num_color_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+				if (len > 2) {
+					const restArgs = copyArgs.slice(2);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}//${arg1}?text=${text}`;
 				} else {
-					if (colorRegx.test(arg1)) {
-						downloadUrl = `${downloadUrl}//${arg1}?text=${arg0}`;
-					} else {
-						downloadUrl = `${downloadUrl}?text=${arg0}+${arg1}`;
-					}
+					downloadUrl = `${prefix}${name}.${ext}//${arg1}`;
 				}
-				break;
-		}
-	}
+			}
+		],
+		[
+			/^011_num_(text|num)_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数'));
+				name = `${width}x${arg0}`;
+
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^011_color_?.*$/,
+			() => {
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${prefix}${name}.${ext}//${arg0}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^011_text_?.*$/,
+			() => {
+				if (len > 0) {
+					const text = genText(copyArgs);
+					downloadUrl = `${prefix}${name}.${ext}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^111_num_color_color_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+
+				downloadUrl = `${prefix}${name}.${ext}/${arg1}/${arg2}`;
+
+				if (len > 3) {
+					const restArgs = copyArgs.slice(3);
+					const text = genText(restArgs);
+					downloadUrl = `${downloadUrl}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^111_num_color_(text|num)_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+
+				console.log(warning('缺失颜色参数！'));
+				downloadUrl = `${prefix}${name}.${ext}/${arg1}`;
+
+				if (len > 2) {
+					const restArgs = copyArgs.slice(2);
+					const text = genText(restArgs);
+					downloadUrl = `${downloadUrl}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^111_num_(text|num)_?.*$/,
+			() => {
+				name = `${width}x${arg0}`;
+
+				console.log(warning('缺失颜色参数！'));
+				downloadUrl = `${prefix}${name}.${ext}`;
+
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${downloadUrl}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^111_color_color_?.*$/,
+			() => {
+				downloadUrl = `${prefix}${name}.${ext}/${arg0}/${arg1}`;
+
+				if (len > 2) {
+					const restArgs = copyArgs.slice(2);
+					const text = genText(restArgs);
+					downloadUrl = `${downloadUrl}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^111_color_(num|text)_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数！'));
+				downloadUrl = `${prefix}${name}.${ext}/${arg0}`;
+
+				if (len > 1) {
+					const restArgs = copyArgs.slice(1);
+					const text = genText(restArgs);
+					downloadUrl = `${downloadUrl}?text=${text}`;
+				}
+			}
+		],
+		[
+			/^111_text_?.*$/,
+			() => {
+				console.log(warning('缺失颜色参数！'));
+
+				if (len > 0) {
+					const text = genText(copyArgs);
+					downloadUrl = `${downloadUrl}?text=${text}`;
+				}
+			}
+		]
+	]);
 };
 
-const opt3Arg = () => {
-	let _text = '';
-	let rest = [];
-
-	if (integerReg.test(arg0)) {
-		name = `${width}x${arg0}`;
-
-		switch (option) {
-			case '001':
-				rest = _otherArgs.slice(2);
-				_text = rest.reduce((accumulator, currentValue) => {
-					return accumulator + '+' + currentValue;
-				}, arg1);
-
-				downloadUrl = `${downloadUrl}?text=${_text}`;
-				break;
-			case '011':
-				if (colorRegx.test(arg1)) {
-					rest = _otherArgs.slice(3);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg2);
-
-					downloadUrl = `${downloadUrl}/${arg1}?text=${_text}`;
-				} else {
-					rest = _otherArgs.slice(2);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg1);
-
-					downloadUrl = `${downloadUrl}?text=${_text}`;
-				}
-
-				break;
-			case '101':
-				if (colorRegx.test(arg1)) {
-					rest = _otherArgs.slice(3);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg2);
-
-					downloadUrl = `${downloadUrl}//${arg1}?text=${_text}`;
-				} else {
-					rest = _otherArgs.slice(2);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg1);
-
-					downloadUrl = `${downloadUrl}?text=${_text}`;
-				}
-			case '111':
-				if (colorRegx.test(arg1)) {
-					if (colorRegx.test(arg2)) {
-						rest = _otherArgs.slice(4);
-						_text = rest.reduce((accumulator, currentValue) => {
-							return accumulator + '+' + currentValue;
-						}, arg3);
-
-						downloadUrl = `${downloadUrl}/${arg1}/${arg2}?text=${_text}`;
-					} else {
-						rest = _otherArgs.slice(3);
-						_text = rest.reduce((accumulator, currentValue) => {
-							return accumulator + '+' + currentValue;
-						}, arg2);
-
-						downloadUrl = `${downloadUrl}/${arg1}?text=${_text}`;
-					}
-				} else {
-					rest = _otherArgs.slice(2);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg1);
-
-					downloadUrl = `${downloadUrl}?text=${_text}`;
-				}
-				break;
-		}
-	} else {
-		switch (option) {
-			case '001':
-				rest = _otherArgs.slice(1);
-				_text = rest.reduce((accumulator, currentValue) => {
-					return accumulator + '+' + currentValue;
-				}, arg0);
-
-				downloadUrl = `${downloadUrl}?text=${_text}`;
-				break;
-			case '011':
-				if (colorRegx.test(arg0)) {
-					rest = _otherArgs.slice(2);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg1);
-
-					downloadUrl = `${downloadUrl}/${arg0}?text=${_text}`;
-				} else {
-					rest = _otherArgs.slice(1);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg0);
-
-					downloadUrl = `${downloadUrl}?text=${_text}`;
-				}
-
-				break;
-			case '101':
-				if (colorRegx.test(arg0)) {
-					rest = _otherArgs.slice(2);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg1);
-
-					downloadUrl = `${downloadUrl}//${arg0}?text=${_text}`;
-				} else {
-					rest = _otherArgs.slice(1);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg0);
-
-					downloadUrl = `${downloadUrl}?text=${_text}`;
-				}
-			case '111':
-				if (colorRegx.test(arg0)) {
-					if (colorRegx.test(arg1)) {
-						rest = _otherArgs.slice(3);
-						_text = rest.reduce((accumulator, currentValue) => {
-							return accumulator + '+' + currentValue;
-						}, arg2);
-
-						downloadUrl = `${downloadUrl}/${arg0}/${arg1}?text=${_text}`;
-					} else {
-						rest = _otherArgs.slice(2);
-						_text = rest.reduce((accumulator, currentValue) => {
-							return accumulator + '+' + currentValue;
-						}, arg1);
-
-						downloadUrl = `${downloadUrl}/${arg0}?text=${_text}`;
-					}
-				} else {
-					rest = _otherArgs.slice(1);
-					_text = rest.reduce((accumulator, currentValue) => {
-						return accumulator + '+' + currentValue;
-					}, arg0);
-
-					downloadUrl = `${downloadUrl}?text=${_text}`;
-				}
-				break;
+const transformArgs = (option, otherArgs) => {
+	if (len < 4) {
+		for (let i = len; i <= 4; i++) {
+			otherArgs.push('blank');
 		}
 	}
+
+	return otherArgs.reduce((acc, cur) => {
+		let curDesc = '';
+
+		switch (true) {
+			case integerReg.test(cur):
+				curDesc = 'num';
+				break;
+			case colorRegx.test(cur):
+				curDesc = 'color';
+				break;
+			default:
+				curDesc = 'text';
+		}
+
+		return acc + '_' + curDesc;
+	}, option);
 };
 
-switch (true) {
-	case ['000', '100', '010'].includes(option):
-		opt1Arg();
-		break;
-	case ['110'].includes(option):
-		if (len === 1) {
-			opt1Arg();
-		} else {
-			opt2Arg();
-		}
+const setDownLoadUrl = (option, otherArgs) => {
+	let action = [...actions()].filter(([key, value]) => key.test(transformArgs(option, otherArgs)));
 
-		break;
-	case ['001', '011', '101', '111'].includes(option) === option:
-		if (len === 1) {
-			opt1Arg();
-		} else if (len === 2) {
-			opt2Arg();
-		} else {
-			opt3Arg();
-		}
+	action.forEach(([key, value]) => value.call(this));
+};
 
-		break;
-}
+setDownLoadUrl(option, otherArgs);
 
 downloadPic(downloadUrl, name, ext);
