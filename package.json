@@ -6,13 +6,20 @@
 	"bin": {
 		"hold": "./bin/index.js"
 	},
+	"scripts": {
+		"test": "ava -v test/index.js"
+	},
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
 		"chalk": "^2.4.1",
 		"commander": "^2.19.0",
+		"exec-sh": "^0.3.2",
 		"ora": "^3.0.0",
 		"request": "^2.88.0",
 		"shelljs": "^0.8.2"
+	},
+	"devDependencies": {
+		"ava": "1.0.0-rc.2"
 	}
 }
