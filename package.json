@@ -1,7 +1,11 @@
 {
-	"name": "placeholder-cli",
+	"name": "hold",
 	"version": "1.0.0",
-	"description": "",
+	"description": "a command line tool to download picture from placeholder.com",
+	"keywords": [
+		"placeholder",
+		"placeholder.com"
+	],
 	"main": "index.js",
 	"bin": {
 		"hold": "./bin/index.js"
@@ -9,15 +13,21 @@
 	"scripts": {
 		"test": "ava -v test/index.js"
 	},
-	"author": "",
-	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/AIluffy/hold/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/AIluffy/hold.git"
+	},
+	"author": "ailuffy",
+	"license": "MIT",
 	"dependencies": {
 		"chalk": "^2.4.1",
 		"commander": "^2.19.0",
 		"exec-sh": "^0.3.2",
 		"ora": "^3.0.0",
-		"request": "^2.88.0",
-		"shelljs": "^0.8.2"
+		"request": "^2.88.0"
 	},
 	"devDependencies": {
 		"ava": "1.0.0-rc.2"

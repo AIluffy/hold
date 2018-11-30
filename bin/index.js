@@ -22,15 +22,22 @@ program
 	.option('-j, --jpg', 'set image jpg extension')
 	.option('-J, --jpeg', 'set image jpeg extension')
 	.option('-p, --png', 'set image png extension')
-	.option('-b, --bg-color <bgColor>', 'set background color', colorRegx, '')
-	.option('-c, --color [color]', 'set text color', colorRegx, '')
+	.option('-b, --bg-color <bgColor>', 'set background color, such as "000/ffffff" or "yellow"', colorRegx, '')
+	.option('-c, --color [color]', 'set text color, such as "000/ffffff" or "yellow"', colorRegx, '')
 	.option('-t, --text [texture]', 'set image custom text, in the mode "a+b+c"', '')
 	.arguments('<width> [height]')
 	.action(function(width, height) {
 		_width = width; // 宽度参数
 		_height = height; // 高度参数
 	})
+	.on('--help', function(){
+		console.log('')
+		console.log('Examples:');
+		console.log('    hold -g 100 200 -b yellow -c 100 -t this+is+example');
+		console.log('    download https://via.placeholder.com/100x200.gif/yellow/100?text=this+is+example');
+	})
 	.parse(process.argv);
+
 
 // // 图片宽度必传
 if (typeof _width === 'undefined' || !_width) {
