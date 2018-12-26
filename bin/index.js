@@ -25,6 +25,7 @@ program
 	.option('-b, --bg-color <bgColor>', 'set background color, such as "000/ffffff" or "yellow"', colorRegx, '')
 	.option('-c, --color [color]', 'set text color, such as "000/ffffff" or "yellow"', colorRegx, '')
 	.option('-t, --text [texture]', 'set image custom text, in the mode "a+b+c"', '')
+	.option('-u, --upload', 'download pic to local, then upload to nos')
 	.arguments('<width> [height]')
 	.action(function(width, height) {
 		_width = width; // 宽度参数
@@ -119,4 +120,4 @@ switch (option) {
 		break;
 }
 
-downloadPic(url, width_height, ext);
+downloadPic(url, width_height, ext, program.upload);

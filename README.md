@@ -8,7 +8,7 @@ You'll first need to install [hold]():
 
 ```
 # with npm
-$ npm i -g hold
+$ npm i -g hold-pic
 # or with yarn
 $ yarn global add hold
 ```
