@@ -21,7 +21,7 @@
 		"url": "https://github.com/AIluffy/hold.git"
 	},
 	"author": "ailuffy",
-	"license": "MIT",
+	"license": "Anti-996",
 	"dependencies": {
 		"chalk": "^2.4.1",
 		"commander": "^2.19.0",

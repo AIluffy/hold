@@ -1,5 +1,8 @@
 # hold-pic
 
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
+
 a command line tool to download picture from [placeholder.com](https://placeholder.com/).
 
 ## Installation
@@ -99,3 +102,4 @@ hold -u 100
 ```
 
 ![nos pic](https://haitao.nos.netease.com/aff07996-dd26-4642-a409-e357b2391e9d_100_100.jpg)
+
